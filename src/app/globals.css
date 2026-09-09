@@ -1,0 +1,1303 @@
+/* ============================================================
+   repo-guard — design tokens
+
+   Six committed colors. --ink / --panel / --text are three steps of a
+   single blue-slate hue; every border, muted label and tint below is
+   derived from them with color-mix, so the whole neutral surface is one
+   hue and none of it competes for attention.
+
+   --err / --warn / --ok are the ONLY saturated colors in the product and
+   are reserved exclusively for severity and scan state. No brand accent
+   exists on purpose: in a security tool "this thing is colored" has to
+   mean "this thing has a status".
+   ============================================================ */
+
+:root {
+  --ink: #0a0d13;
+  --panel: #10141c;
+  --text: #dde3ef;
+  --err: #ef5f6b;
+  --warn: #e0a63c;
+  --ok: #4fb07a;
+
+  /* derived neutrals — all one hue */
+  --raise: color-mix(in oklab, var(--text) 5%, var(--panel));
+  --edge: color-mix(in oklab, var(--text) 12%, var(--panel));
+  --edge-soft: color-mix(in oklab, var(--text) 7%, var(--panel));
+  --dim: color-mix(in oklab, var(--text) 62%, var(--ink));
+  --dimmer: color-mix(in oklab, var(--text) 40%, var(--ink));
+  --faint: color-mix(in oklab, var(--text) 26%, var(--ink));
+
+  --mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --r-sm: 3px;
+  --r-md: 5px;
+  --r-lg: 8px;
+
+  --topbar-h: 52px;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--ink);
+  background-image: radial-gradient(
+    120ch 60ch at 50% -20ch,
+    color-mix(in oklab, var(--text) 4%, transparent),
+    transparent 70%
+  );
+  background-repeat: no-repeat;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--ok) 30%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--text) 55%, transparent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--edge);
+  border: 3px solid var(--ink);
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--faint);
+}
+
+/* ============================================================
+   primitives
+   ============================================================ */
+
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--dim);
+  background: transparent;
+  border: 1px solid var(--edge);
+  border-radius: var(--r-sm);
+  padding: 7px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 110ms ease,
+    border-color 110ms ease,
+    background-color 110ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--faint);
+  background: var(--raise);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0.5px);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn--solid {
+  color: var(--ink);
+  background: color-mix(in oklab, var(--text) 82%, var(--ink));
+  border-color: transparent;
+  font-weight: 500;
+}
+
+.btn--solid:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--text);
+  border-color: transparent;
+}
+
+.btn--quiet {
+  border-color: transparent;
+  padding-inline: 8px;
+}
+
+.btn--quiet:hover:not(:disabled) {
+  border-color: var(--edge);
+}
+
+.btn--danger {
+  color: var(--err);
+  border-color: color-mix(in oklab, var(--err) 35%, transparent);
+}
+
+.btn--danger:hover:not(:disabled) {
+  color: var(--err);
+  background: color-mix(in oklab, var(--err) 12%, transparent);
+  border-color: color-mix(in oklab, var(--err) 55%, transparent);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dimmer);
+  background: var(--raise);
+  border: 1px solid var(--edge-soft);
+  border-radius: var(--r-sm);
+  padding: 4px 6px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1;
+  font-weight: 500;
+  border-radius: 99px;
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.pill--idle {
+  color: var(--dimmer);
+  border-color: var(--edge);
+}
+
+.pill--ok {
+  color: var(--ok);
+  background: color-mix(in oklab, var(--ok) 13%, transparent);
+  border-color: color-mix(in oklab, var(--ok) 30%, transparent);
+}
+
+.pill--err {
+  color: var(--err);
+  background: color-mix(in oklab, var(--err) 14%, transparent);
+  border-color: color-mix(in oklab, var(--err) 34%, transparent);
+}
+
+.pill--warn {
+  color: var(--warn);
+  background: color-mix(in oklab, var(--warn) 13%, transparent);
+  border-color: color-mix(in oklab, var(--warn) 32%, transparent);
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-sm);
+  padding: 0 9px;
+  height: 30px;
+  transition: border-color 110ms ease;
+}
+
+.field:focus-within {
+  border-color: var(--faint);
+}
+
+.field input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  outline: none;
+  padding: 0;
+}
+
+.field input::placeholder {
+  color: var(--faint);
+}
+
+.field .glyph {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.kbd {
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--faint);
+  border: 1px solid var(--edge);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  padding: 3px 5px;
+}
+
+.seg {
+  display: inline-flex;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.seg button {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1;
+  color: var(--dimmer);
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--edge-soft);
+  padding: 8px 11px;
+  cursor: pointer;
+  transition:
+    color 110ms ease,
+    background-color 110ms ease;
+}
+
+.seg button:last-child {
+  border-right: 0;
+}
+
+.seg button:hover {
+  color: var(--text);
+  background: var(--raise);
+}
+
+.seg button[aria-pressed="true"] {
+  color: var(--text);
+  background: var(--raise);
+  box-shadow: inset 0 -2px 0 color-mix(in oklab, var(--text) 60%, transparent);
+}
+
+.seg button .count {
+  color: var(--faint);
+  margin-left: 6px;
+}
+
+/* ============================================================
+   app chrome
+   ============================================================ */
+
+.app {
+  min-height: 100%;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 22px;
+  border-bottom: 1px solid var(--edge);
+  background: color-mix(in oklab, var(--ink) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.brand .block {
+  width: 8px;
+  height: 15px;
+  border-radius: 1px;
+  background: var(--ok);
+  box-shadow: 0 0 12px color-mix(in oklab, var(--ok) 55%, transparent);
+  animation: blink 2.6s steps(1) infinite;
+}
+
+@keyframes blink {
+  0%,
+  62% {
+    opacity: 1;
+  }
+  63%,
+  100% {
+    opacity: 0.32;
+  }
+}
+
+.divider {
+  width: 1px;
+  height: 18px;
+  background: var(--edge);
+}
+
+.crumbs {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--faint);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.crumbs b {
+  color: var(--dim);
+  font-weight: 500;
+}
+
+.grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.who img {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--edge);
+}
+
+/* toolbar */
+
+.toolbar {
+  position: sticky;
+  top: var(--topbar-h);
+  z-index: 19;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 11px 22px;
+  border-bottom: 1px solid var(--edge);
+  background: color-mix(in oklab, var(--ink) 88%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.wrap {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 22px 120px;
+}
+
+/* ============================================================
+   summary bar — a git-log --stat line, not a row of stat tiles
+   ============================================================ */
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: wrap;
+  margin: 18px 0 6px;
+  border: 1px solid var(--edge);
+  border-radius: var(--r-md);
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.summary .cell {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 11px 16px;
+  border-right: 1px solid var(--edge-soft);
+}
+
+.summary .cell:last-child {
+  border-right: 0;
+}
+
+.summary .n {
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.summary .n.err {
+  color: var(--err);
+}
+
+.summary .n.warn {
+  color: var(--warn);
+}
+
+.summary .n.ok {
+  color: var(--ok);
+}
+
+.summary .n.idle {
+  color: var(--dimmer);
+}
+
+.summary .lbl {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* ============================================================
+   commit ledger
+   ============================================================ */
+
+.ledger {
+  margin-top: 14px;
+}
+
+.node {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  column-gap: 14px;
+  position: relative;
+}
+
+.node .spine {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.node .spine::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--edge);
+}
+
+.node:first-child .spine::before {
+  top: 22px;
+}
+
+.node:last-child .spine::before {
+  bottom: auto;
+  height: 22px;
+}
+
+.dot {
+  position: relative;
+  z-index: 1;
+  width: 10px;
+  height: 10px;
+  margin-top: 17px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--ink);
+  box-shadow: 0 0 0 1.5px var(--faint), 0 0 0 5px var(--ink);
+}
+
+.dot--clean {
+  background: var(--ok);
+  box-shadow:
+    0 0 0 1.5px var(--ok),
+    0 0 0 5px var(--ink),
+    0 0 14px color-mix(in oklab, var(--ok) 60%, transparent);
+}
+
+.dot--flagged {
+  background: var(--err);
+  box-shadow:
+    0 0 0 1.5px var(--err),
+    0 0 0 5px var(--ink),
+    0 0 14px color-mix(in oklab, var(--err) 65%, transparent);
+}
+
+.dot--scanning {
+  background: var(--warn);
+  box-shadow: 0 0 0 1.5px var(--warn), 0 0 0 5px var(--ink);
+  animation: throb 1.15s ease-in-out infinite;
+}
+
+.dot--error {
+  background: var(--ink);
+  box-shadow: 0 0 0 1.5px var(--err), 0 0 0 5px var(--ink);
+}
+
+@keyframes throb {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.row {
+  position: relative;
+  padding: 12px 12px 13px;
+  margin-left: -12px;
+  border-radius: var(--r-md);
+  border-bottom: 1px solid var(--edge-soft);
+  min-width: 0;
+  transition: background-color 110ms ease;
+}
+
+.row:hover {
+  background: color-mix(in oklab, var(--text) 3%, transparent);
+}
+
+.row--open {
+  background: color-mix(in oklab, var(--text) 3%, transparent);
+}
+
+.row-main {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.repo {
+  font-family: var(--mono);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text);
+  text-decoration: none;
+  border: 0;
+}
+
+.repo .owner {
+  color: var(--faint);
+  font-weight: 400;
+}
+
+.repo:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--faint);
+  text-underline-offset: 4px;
+}
+
+.row-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px 14px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
+.row-meta .sep {
+  color: var(--edge);
+}
+
+.row-meta .hot {
+  color: var(--err);
+}
+
+.row-meta .warm {
+  color: var(--warn);
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.scanbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 99px;
+}
+
+.scanbar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 34%;
+  border-radius: 99px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--warn),
+    transparent
+  );
+  animation: sweep 1.15s linear infinite;
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(420%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot--scanning,
+  .scanbar::after,
+  .brand .block {
+    animation: none;
+  }
+}
+
+/* ============================================================
+   expanded detail
+   ============================================================ */
+
+.detail {
+  margin-top: 13px;
+  border: 1px solid var(--edge);
+  border-radius: var(--r-md);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.sect {
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--edge-soft);
+}
+
+.sect:last-child {
+  border-bottom: 0;
+}
+
+.sect--tight {
+  padding-block: 11px;
+}
+
+.sect-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.sect-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.sect-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--edge-soft);
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 26px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--faint);
+}
+
+.facts b {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--dim);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-sm);
+  padding: 6px 10px;
+  background: var(--raise);
+}
+
+.check .mark {
+  font-weight: 700;
+  width: 1ch;
+  text-align: center;
+}
+
+.check--yes {
+  border-color: color-mix(in oklab, var(--ok) 28%, transparent);
+}
+
+.check--yes .mark {
+  color: var(--ok);
+}
+
+.check--no {
+  border-color: color-mix(in oklab, var(--err) 30%, transparent);
+}
+
+.check--no .mark {
+  color: var(--err);
+}
+
+.check--unknown .mark {
+  color: var(--warn);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--faint);
+  margin: 9px 0 0;
+  max-width: 74ch;
+}
+
+/* ============================================================
+   findings — rendered as diff hunks
+   ============================================================ */
+
+.finding {
+  border: 1px solid var(--edge-soft);
+  border-left: 3px solid var(--edge);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  margin-bottom: 9px;
+  background: var(--raise);
+}
+
+.finding:last-child {
+  margin-bottom: 0;
+}
+
+.finding--ERROR {
+  border-left-color: var(--err);
+  border-color: color-mix(in oklab, var(--err) 20%, var(--edge-soft));
+  background: color-mix(in oklab, var(--err) 6%, var(--panel));
+}
+
+.finding--WARNING {
+  border-left-color: var(--warn);
+  border-color: color-mix(in oklab, var(--warn) 18%, var(--edge-soft));
+  background: color-mix(in oklab, var(--warn) 5%, var(--panel));
+}
+
+.finding-top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--edge-soft);
+}
+
+.sev {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  border-radius: 2px;
+  padding: 3px 6px;
+  line-height: 1;
+}
+
+.sev--ERROR {
+  color: var(--ink);
+  background: var(--err);
+}
+
+.sev--WARNING {
+  color: var(--ink);
+  background: var(--warn);
+}
+
+.rule-id {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.loc {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--dimmer);
+  margin-left: auto;
+  text-decoration: none;
+  border: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.loc:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.loc .ln {
+  color: var(--faint);
+}
+
+.finding-body {
+  padding: 11px 12px 12px;
+}
+
+.finding-msg {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text);
+  max-width: 80ch;
+}
+
+.finding-note {
+  margin: 7px 0 0;
+  font-size: 12px;
+  color: var(--faint);
+  padding-left: 10px;
+  border-left: 1px solid var(--edge);
+  max-width: 80ch;
+}
+
+.hunk {
+  display: flex;
+  margin-top: 11px;
+  border: 1px solid var(--edge-soft);
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--ink) 82%, var(--panel));
+  overflow: hidden;
+}
+
+.hunk .gutter {
+  flex: none;
+  padding: 8px 9px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+  background: color-mix(in oklab, var(--text) 3%, transparent);
+  border-right: 1px solid var(--edge-soft);
+  text-align: right;
+  user-select: none;
+}
+
+.hunk .code {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 11px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--dim);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.finding--ERROR .hunk .code {
+  color: color-mix(in oklab, var(--err) 22%, var(--text));
+}
+
+/* ============================================================
+   states
+   ============================================================ */
+
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  font-size: 13px;
+  color: var(--dim);
+  padding: 12px 14px;
+  border: 1px solid var(--edge);
+  border-left: 3px solid var(--warn);
+  border-radius: var(--r-sm);
+  background: var(--panel);
+  margin: 14px 0;
+}
+
+.banner--err {
+  border-left-color: var(--err);
+  color: var(--text);
+}
+
+.banner .mark {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--warn);
+  line-height: 1.55;
+}
+
+.banner--err .mark {
+  color: var(--err);
+}
+
+.blank {
+  text-align: center;
+  padding: 76px 20px;
+  color: var(--faint);
+}
+
+.blank .big {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--dimmer);
+  margin-bottom: 6px;
+}
+
+.blank .small {
+  font-size: 12.5px;
+}
+
+.skeleton {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  column-gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--edge-soft);
+}
+
+.skeleton .bar {
+  height: 11px;
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--edge-soft),
+    var(--edge),
+    var(--edge-soft)
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+.skeleton .bar + .bar {
+  margin-top: 9px;
+  height: 8px;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ============================================================
+   sign-in gate
+   ============================================================ */
+
+.gate {
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 56px;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 64px 32px;
+}
+
+@media (max-width: 900px) {
+  .gate {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 34px;
+    padding: 44px 22px;
+  }
+}
+
+.gate-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 22px;
+}
+
+.gate-brand .block {
+  width: 10px;
+  height: 22px;
+  border-radius: 1px;
+  background: var(--ok);
+  box-shadow: 0 0 16px color-mix(in oklab, var(--ok) 60%, transparent);
+  animation: blink 2.6s steps(1) infinite;
+}
+
+.gate h1 {
+  font-family: var(--mono);
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+
+.gate .lede {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--dim);
+  margin: 0 0 26px;
+  max-width: 46ch;
+}
+
+.caps {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 26px;
+  border-top: 1px solid var(--edge-soft);
+}
+
+.caps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--edge-soft);
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.caps .idx {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+  padding-top: 2px;
+  min-width: 2ch;
+}
+
+.caps b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.warnbox {
+  border: 1px solid color-mix(in oklab, var(--warn) 26%, var(--edge));
+  border-left: 3px solid var(--warn);
+  border-radius: var(--r-md);
+  background: color-mix(in oklab, var(--warn) 6%, var(--panel));
+  padding: 14px 16px;
+  margin-bottom: 24px;
+}
+
+.warnbox .sect-title {
+  color: var(--warn);
+  margin-bottom: 7px;
+}
+
+.warnbox p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--dim);
+  max-width: 58ch;
+}
+
+.warnbox code {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  background: var(--raise);
+  border: 1px solid var(--edge-soft);
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+
+.gate-foot {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--faint);
+}
+
+/* faux terminal preview */
+
+.preview {
+  border: 1px solid var(--edge);
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--edge);
+  background: var(--raise);
+}
+
+.preview-bar .lamp {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--edge);
+}
+
+.preview-bar .title {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-left: 6px;
+}
+
+.preview-body {
+  padding: 14px;
+}
+
+.preview-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  padding: 7px 0;
+}
+
+.preview-line .prompt {
+  color: var(--ok);
+}
+
+.preview-line .cursor {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  background: var(--dim);
+  animation: blink 1.1s steps(1) infinite;
+  vertical-align: middle;
+}
+
+/* ============================================================
+   remediation picker
+   ============================================================ */
+
+.fixlist {
+  border: 1px solid var(--edge-soft);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.fixrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--edge-soft);
+  background: var(--raise);
+  cursor: pointer;
+}
+
+.fixrow:last-child {
+  border-bottom: 0;
+}
+
+.fixrow:hover {
+  background: color-mix(in oklab, var(--text) 5%, var(--panel));
+}
+
+.fixrow input[type="checkbox"] {
+  accent-color: var(--ok);
+  width: 14px;
+  height: 14px;
+  flex: none;
+  cursor: pointer;
+}
+
+.fixrow .p {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fixrow .why {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+  text-align: right;
+}
+
+.fixrow .mark {
+  font-family: var(--mono);
+  font-weight: 700;
+  flex: none;
+}
+
+.fixbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 11px;
+}
+
+.fixbar .why {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+}
