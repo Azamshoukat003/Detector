@@ -227,8 +227,8 @@ DevTools probing). Neither is this app.
 | `blockchain-rpc-plus-exec` | ERROR | `eth_blockNumber` / `eth_getBlockByNumber` / `eth_getTransactionByHash` / `eth_getTransactionCount` |
 | `forced-git-push` | WARNING | `git push ... --force` inside a script |
 | `pipe-download-to-shell` | ERROR | `curl ... \| bash\|sh\|node\|python` |
-| `gitignore-hides-dropped-payload` | ERROR | a `.gitignore` line naming `branch_structure.json`, `temp_auto_push.bat` or `temp_interactive_push.bat` — **only inside a `.gitignore`** |
-| `known-dropper-file-present` | ERROR | one of those three files tracked anywhere in the repo (a tree check, not a content match) |
+| `gitignore-hides-dropped-payload` | ERROR | a `.gitignore` line naming any known dropper artifact — **only inside a `.gitignore`** |
+| `known-dropper-file-present` | ERROR | one of those files tracked anywhere in the repo (a tree check, not a content match) |
 
 Each finding reports the rule id, severity, message, `path:line`, and the
 matching source line. At most 5 matches per rule per file, so one obfuscated
@@ -250,7 +250,12 @@ so they stop appearing in `git status`:
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
+config.bat
 ```
+
+To watch another filename, add it to `KNOWN_DROPPED_FILES` in
+`src/lib/scan-policy.ts` — that one list feeds the always-scan set, the
+push-alert set, the `.gitignore` rule and the local check.
 
 Both halves of that are detected:
 
@@ -441,8 +446,8 @@ The **local check** button in the toolbar covers that gap.
 Give it an absolute folder path (it defaults to the server's working directory)
 and it walks the tree, reporting:
 
-- files named `branch_structure.json`, `temp_auto_push.bat` or
-  `temp_interactive_push.bat`, with size and last-modified time
+- files named `branch_structure.json`, `temp_auto_push.bat`,
+  `temp_interactive_push.bat` or `config.bat`, with size and last-modified time
 - every `.gitignore` line naming one of them, with line numbers
 
 It skips `node_modules`, `.git`, `.next`, `dist`, `build`, `out`, `.cache`,
@@ -483,8 +488,9 @@ filesystem data in the body.
    pusher, before/after SHAs and the compare URL.
 4. Any commit in the push that added or modified `.gitignore`,
    `postcss.config.js`, `tailwind.config.{js,ts}`, `eslint.config.js`,
-   `.eslintrc.js`, `.npmrc`, `.repoguardignore`, `branch_structure.json`,
-   `temp_auto_push.bat` or `temp_interactive_push.bat` →
+   `.eslintrc.js`, `.npmrc`, `.repoguardignore`, or any known dropper artifact
+   (`branch_structure.json`, `temp_auto_push.bat`, `temp_interactive_push.bat`,
+   `config.bat`) →
    **SENSITIVE CONFIG FILE CHANGED** alert, whether or not it was a force-push.
 
 Both alerts can fire on the same push, and both go to the same
@@ -570,5 +576,6 @@ These are real gaps, not oversights:
 
 If exactly one thing gets added in v2, it should be persistence — nearly every
 gap above (history, dedup, retry, trend) is downstream of having a database.
-#   D e t e c t o r  
+#   D e t e c t o r 
+ 
  
