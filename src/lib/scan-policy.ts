@@ -26,6 +26,45 @@ export const SCAN_EXTENSIONS = [
 ];
 
 /**
+ * Filenames this dropper writes into a repo. Three signals matter: the file
+ * being present, the attacker adding it to `.gitignore` so it stops showing up
+ * in `git status`, and a push touching it.
+ *
+ * This is the SINGLE place to add a new artifact — the always-scan set, the
+ * push-alert set, the `.gitignore` rule and the local check all derive from it.
+ */
+export const KNOWN_DROPPED_FILES = [
+  "branch_structure.json",
+  "temp_auto_push.bat",
+  "temp_interactive_push.bat",
+  "config.bat",
+] as const;
+
+const DROPPED_FILE_SET: ReadonlySet<string> = new Set(KNOWN_DROPPED_FILES);
+
+export function isKnownDroppedFile(path: string): boolean {
+  return DROPPED_FILE_SET.has(basename(path));
+}
+
+/**
+ * Matches a whole `.gitignore` line naming one of the dropped files, allowing
+ * the usual leading `/`, `**​/`, `!` and trailing `/` decorations. Derived from
+ * the list above so the two can never drift apart.
+ */
+function escapeForRegExp(literal: string): string {
+  return literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// String.raw so backslashes reach the RegExp intact — a plain "\t" here would
+// be a literal tab and "\*" would collapse to "*", which is a syntax error.
+export const DROPPED_FILE_GITIGNORE_PATTERN = new RegExp(
+  String.raw`^[ \t]*!?[ \t]*/?(?:\*\*/)?(?:` +
+    KNOWN_DROPPED_FILES.map(escapeForRegExp).join("|") +
+    String.raw`)[ \t]*/?[ \t]*$`,
+  "gm",
+);
+
+/**
  * Always scanned regardless of extension. These are the files the observed
  * malware rewrites: .gitignore to hide dropped files, and build-pipeline
  * config to re-establish execution on every install/build.
@@ -34,9 +73,7 @@ export const ALWAYS_SCAN_FILENAMES = new Set([
   ".gitignore",
   ".npmrc",
   // Dropper artifacts — scanned for content regardless of extension.
-  "branch_structure.json",
-  "temp_auto_push.bat",
-  "temp_interactive_push.bat",
+  ...KNOWN_DROPPED_FILES,
   "postcss.config.js",
   "postcss.config.cjs",
   "postcss.config.mjs",
@@ -76,42 +113,11 @@ export const SENSITIVE_PUSH_PATHS = new Set([
   ".eslintrc.js",
   ".npmrc",
   ".repoguardignore",
-  "branch_structure.json",
-  "temp_auto_push.bat",
-  "temp_interactive_push.bat",
+  ...KNOWN_DROPPED_FILES,
 ]);
 
 /** Optional repo-root file listing gitignore-style patterns to skip. */
 export const IGNORE_FILE = ".repoguardignore";
-
-/**
- * Filenames this specific dropper writes into a repo. Two signals matter:
- * the file being present at all, and the attacker adding it to `.gitignore`
- * so it stops showing up in `git status`.
- */
-export const KNOWN_DROPPED_FILES = [
-  "branch_structure.json",
-  "temp_auto_push.bat",
-  "temp_interactive_push.bat",
-] as const;
-
-const DROPPED_FILE_SET: ReadonlySet<string> = new Set(KNOWN_DROPPED_FILES);
-
-export function isKnownDroppedFile(path: string): boolean {
-  return DROPPED_FILE_SET.has(basename(path));
-}
-
-/**
- * Matches a whole `.gitignore` line naming one of the dropped files, allowing
- * the usual leading `/`, `**​/`, `!` and trailing `/` decorations. Derived from
- * the list above so the two can never drift apart.
- */
-export const DROPPED_FILE_GITIGNORE_PATTERN = new RegExp(
-  "^[ \\t]*!?[ \\t]*\\/?(?:\\*\\*\\/)?(?:" +
-    KNOWN_DROPPED_FILES.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") +
-    ")[ \\t]*\\/?[ \\t]*$",
-  "gm",
-);
 
 /**
  * Translate one gitignore-style pattern to an anchored RegExp.
