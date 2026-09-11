@@ -106,7 +106,6 @@ export default function SignInGate() {
                 <div className="hunk">
                   <div className="gutter">1</div>
                   <pre className="code">
-                    {"(function(_0x3a1f,_0x4b2c){while(!![]){try{"}
                   </pre>
                 </div>
               </div>
