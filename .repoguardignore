@@ -1,0 +1,5 @@
+# repo-guard's own detection rules and docs contain the payload signatures
+# they look for. Without this, the tool flags itself.
+src/lib/rules.ts
+src/lib/scan-policy.ts
+README.md
