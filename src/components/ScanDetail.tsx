@@ -15,11 +15,36 @@ interface StripOutcome {
   rulesHit: string[];
 }
 
-interface RemediateResponse {
+interface CommitOutcome {
+  mode: "pr" | "direct";
+  commitSha: string;
+  branch: string;
   pullRequestUrl?: string;
   pullRequestNumber?: number;
+  files: string[];
+}
+
+interface DirPlan {
+  dir: string;
+  ok: boolean;
+  reason?: string;
+  files: string[];
+  justification?: string;
+}
+
+interface RemediateResponse {
+  mode?: "pr" | "direct";
+  perFile?: boolean;
+  outcomes?: CommitOutcome[];
   results?: StripOutcome[];
+  dirPlans?: DirPlan[];
   error?: string;
+}
+
+/** Directory of a repo-relative path, or null for a file at the root. */
+function dirOf(path: string): string | null {
+  const i = path.lastIndexOf("/");
+  return i === -1 ? null : path.slice(0, i);
 }
 
 function Remediation({
@@ -61,8 +86,35 @@ function Remediation({
     () =>
       new Set(files.filter((f) => f.config || f.dropper).map((f) => f.path)),
   );
+  // Folders worth offering wholesale removal for: those holding a dropper
+  // artifact or an asset whose bytes contradict its extension. The server
+  // re-checks this independently before deleting anything.
+  const folders = useMemo(() => {
+    const byDir = new Map<string, number>();
+    for (const f of result.findings) {
+      const isPlanted =
+        isKnownDroppedFile(f.path) ||
+        f.ruleId === "asset-extension-content-mismatch" ||
+        f.ruleId === "svg-embedded-script";
+      if (!isPlanted) continue;
+      const d = dirOf(f.path);
+      if (d === null) continue; // never offer the repo root
+      byDir.set(d, (byDir.get(d) ?? 0) + 1);
+    }
+    return [...byDir.entries()]
+      .map(([dir, hits]) => ({ dir, hits }))
+      .sort((a, b) => a.dir.localeCompare(b.dir));
+  }, [result.findings]);
+
+  const [selectedDirs, setSelectedDirs] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [response, setResponse] = useState<RemediateResponse | null>(null);
+  // "pr" opens a pull request; "direct" commits straight to the base branch.
+  const [mode, setMode] = useState<"pr" | "direct">("pr");
+  const [perFile, setPerFile] = useState(false);
+  // Committing straight to the base branch is irreversible from here, so it
+  // takes a second, deliberate click.
+  const [armed, setArmed] = useState(false);
 
   const toggle = (path: string) =>
     setSelected((prev) => {
@@ -73,6 +125,13 @@ function Remediation({
     });
 
   const submit = async () => {
+    // A folder removal is irreversible in effect even inside a PR, so it arms
+    // the same confirm step that a direct commit does.
+    if ((mode === "direct" || selectedDirs.size > 0) && !armed) {
+      setArmed(true);
+      return;
+    }
+    setArmed(false);
     setBusy(true);
     setResponse(null);
     try {
@@ -84,6 +143,9 @@ function Remediation({
           repo: repo.name,
           branch: result.branch,
           paths: [...selected],
+          dirs: [...selectedDirs],
+          mode,
+          perFile,
         }),
       });
       setResponse((await res.json()) as RemediateResponse);
@@ -106,16 +168,107 @@ function Remediation({
       </div>
 
       <p className="hint" style={{ marginTop: 0, marginBottom: 11 }}>
-        Opens a pull request on a new branch — nothing is written to{" "}
-        <b>{result.branch}</b>. Known dropper artifacts are <b>deleted whole</b>;
-        every other file has <b>only</b> the lines a rule matched removed. Where
-        the payload was appended to a line that also holds real code, the line is
-        cut at the boundary rather than deleted, and the result is checked for
-        balanced brackets before any PR is opened.
-        Droppers and config files are pre-selected; ordinary source files are
-        not, because removing lines from application code is a much bigger claim
-        than removing them from a config.
+        Known dropper artifacts are <b>deleted whole</b>; every other file has{" "}
+        <b>only</b> the lines a rule matched removed. Where the payload was
+        appended to a line that also holds real code, the line is cut at the
+        boundary rather than deleted, and the result is checked for balanced
+        brackets before anything is written. Droppers and config files are
+        pre-selected; ordinary source files are not, because removing lines from
+        application code is a much bigger claim than removing them from a config.
       </p>
+
+      <div className="fixbar" style={{ marginTop: 0, marginBottom: 11 }}>
+        <div className="seg" role="group" aria-label="Write mode">
+          <button
+            aria-pressed={mode === "pr"}
+            disabled={busy}
+            onClick={() => {
+              setMode("pr");
+              setArmed(false);
+            }}
+          >
+            open pull request
+          </button>
+          <button
+            aria-pressed={mode === "direct"}
+            disabled={busy}
+            onClick={() => {
+              setMode("direct");
+              setArmed(false);
+            }}
+          >
+            commit to {result.branch}
+          </button>
+        </div>
+
+        {mode === "pr" ? (
+          <div className="seg" role="group" aria-label="Pull request grouping">
+            <button
+              aria-pressed={!perFile}
+              disabled={busy}
+              onClick={() => setPerFile(false)}
+            >
+              one PR for all
+            </button>
+            <button
+              aria-pressed={perFile}
+              disabled={busy}
+              onClick={() => setPerFile(true)}
+            >
+              one PR per file
+            </button>
+          </div>
+        ) : null}
+
+        <span className="why">
+          {mode === "pr"
+            ? `nothing is written to ${result.branch} until you merge`
+            : `writes straight to ${result.branch} — no review step`}
+        </span>
+      </div>
+
+      {folders.length > 0 ? (
+        <>
+          <div className="sect-head" style={{ marginBottom: 8 }}>
+            <span className="sect-title">Delete whole folders</span>
+            <span className="sect-rule" />
+          </div>
+          <p className="hint" style={{ marginTop: 0, marginBottom: 8 }}>
+            Every file under a ticked folder is removed, not just the flagged
+            one. Only folders containing a planted file are offered, and the
+            server re-confirms that independently before deleting anything —
+            but legitimate files in the same folder go too. Leave these unticked
+            unless the whole folder arrived with the payload.
+          </p>
+          <div className="fixlist" style={{ marginBottom: 11 }}>
+            {folders.map((d) => (
+              <label className="fixrow" key={d.dir}>
+                <input
+                  type="checkbox"
+                  checked={selectedDirs.has(d.dir)}
+                  disabled={busy}
+                  onChange={() =>
+                    setSelectedDirs((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(d.dir)) next.delete(d.dir);
+                      else next.add(d.dir);
+                      setArmed(false);
+                      return next;
+                    })
+                  }
+                />
+                <span className="p">{d.dir}/</span>
+                <span className="chip" style={{ color: "var(--err)" }}>
+                  whole folder
+                </span>
+                <span className="why">
+                  {d.hits} planted file{d.hits === 1 ? "" : "s"} inside
+                </span>
+              </label>
+            ))}
+          </div>
+        </>
+      ) : null}
 
       <div className="fixlist">
         {files.map((f) => (
@@ -144,29 +297,66 @@ function Remediation({
 
       <div className="fixbar">
         <button
-          className="btn btn--solid"
-          disabled={busy || selected.size === 0}
+          className={`btn ${armed ? "btn--danger" : "btn--solid"}`}
+          disabled={busy || (selected.size === 0 && selectedDirs.size === 0)}
           onClick={() => void submit()}
         >
           {busy
-            ? "opening pull request…"
-            : `Open cleanup PR (${selected.size} file${selected.size === 1 ? "" : "s"})`}
+            ? mode === "direct"
+              ? "committing…"
+              : "opening pull request…"
+            : armed
+              ? `confirm — commit ${selected.size} file${selected.size === 1 ? "" : "s"} to ${result.branch}`
+              : mode === "direct"
+                ? `Commit to ${result.branch} (${selected.size})`
+                : perFile
+                  ? `Open ${selected.size} PR${selected.size === 1 ? "" : "s"}, one per file`
+                  : `Open cleanup PR (${selected.size} file${selected.size === 1 ? "" : "s"})`}
         </button>
+        {armed ? (
+          <button className="btn btn--quiet" onClick={() => setArmed(false)}>
+            cancel
+          </button>
+        ) : null}
         <span className="why">requires write access to {repo.fullName}</span>
       </div>
 
-      {response?.pullRequestUrl ? (
+      {response?.outcomes?.length ? (
         <div className="banner" style={{ borderLeftColor: "var(--ok)" }}>
           <span className="mark" style={{ color: "var(--ok)" }}>
             ✓
           </span>
           <span>
-            Opened{" "}
-            <a href={response.pullRequestUrl} target="_blank" rel="noreferrer noopener">
-              pull request #{response.pullRequestNumber}
-            </a>
-            . Read the diff before merging — this removes matched lines only, and
-            proves nothing about what the rules did not catch.
+            {response.mode === "direct" ? (
+              <>
+                Committed{" "}
+                <code>{response.outcomes[0].commitSha.slice(0, 7)}</code> directly
+                to <b>{response.outcomes[0].branch}</b> (
+                {response.outcomes[0].files.length} file
+                {response.outcomes[0].files.length === 1 ? "" : "s"}). There was no
+                review step — check the repo now, and revert that commit if it is
+                not what you expected.
+              </>
+            ) : (
+              <>
+                Opened{" "}
+                {response.outcomes.map((o, i) => (
+                  <span key={o.branch}>
+                    {i > 0 ? ", " : ""}
+                    <a
+                      href={o.pullRequestUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
+                      #{o.pullRequestNumber}
+                    </a>
+                    {response.perFile ? ` (${o.files[0]})` : ""}
+                  </span>
+                ))}
+                . Read the diff before merging — this removes matched lines only,
+                and proves nothing about what the rules did not catch.
+              </>
+            )}
           </span>
         </div>
       ) : null}
@@ -175,6 +365,27 @@ function Remediation({
         <div className="banner banner--err">
           <span className="mark">✕</span>
           <span>{response.error}</span>
+        </div>
+      ) : null}
+
+      {response?.dirPlans?.length ? (
+        <div className="fixlist" style={{ marginTop: 10 }}>
+          {response.dirPlans.map((d) => (
+            <div className="fixrow" key={d.dir}>
+              <span
+                className="mark"
+                style={{ color: d.ok ? "var(--ok)" : "var(--warn)" }}
+              >
+                {d.ok ? "✓" : "!"}
+              </span>
+              <span className="p">{d.dir}/</span>
+              <span className="why">
+                {d.ok
+                  ? `${d.files.length} file${d.files.length === 1 ? "" : "s"} removed — ${d.justification ?? ""}`
+                  : d.reason}
+              </span>
+            </div>
+          ))}
         </div>
       ) : null}
 
@@ -336,6 +547,25 @@ export default function ScanDetail({
               This scan is not exhaustive — &ldquo;clean&rdquo; here means clean in
               what it looked at.
             </span>
+          </div>
+        </div>
+      ) : null}
+
+      {stats.assetsChecked > 0 ? (
+        <div className="sect sect--tight">
+          <div className="facts">
+            <span style={{ color: "var(--faint)" }}>assets:</span>
+            <span>
+              header-checked <b>{stats.assetsChecked}</b>
+            </span>
+            <span style={{ color: stats.assetMismatches > 0 ? "var(--err)" : undefined }}>
+              mismatched <b>{stats.assetMismatches}</b>
+            </span>
+            {stats.assetsSkipped > 0 ? (
+              <span>
+                over the asset cap <b>{stats.assetsSkipped}</b>
+              </span>
+            ) : null}
           </div>
         </div>
       ) : null}

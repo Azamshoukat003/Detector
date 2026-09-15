@@ -9,6 +9,13 @@ export const MAX_FILE_BYTES = 500 * 1024;
 /** Hard cap per scan run, to stay inside the serverless time budget. */
 export const MAX_FILES_PER_SCAN = 200;
 
+/**
+ * Binary assets are fetched only to check their header against the signature
+ * their extension promises, so the budget is separate and much smaller.
+ */
+export const MAX_ASSETS_PER_SCAN = 40;
+export const MAX_ASSET_BYTES = 1024 * 1024;
+
 /** Path prefixes/segments never worth scanning (vendored or generated). */
 export const SKIP_DIRS = ["node_modules/", "dist/", "build/", ".next/"];
 
@@ -38,6 +45,10 @@ export const KNOWN_DROPPED_FILES = [
   "temp_auto_push.bat",
   "temp_interactive_push.bat",
   "config.bat",
+  // Arrives disguised as a webfont. Font Awesome has no solid-400 face, and
+  // this one never ships with the sibling .eot/.svg/.ttf/.woff the real faces
+  // have — it is dropped in alongside them to blend into a fonts folder.
+  "fa-solid-400.woff2",
 ] as const;
 
 const DROPPED_FILE_SET: ReadonlySet<string> = new Set(KNOWN_DROPPED_FILES);

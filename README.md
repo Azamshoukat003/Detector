@@ -276,6 +276,35 @@ In the cleanup PR the two get different treatment: the dropper files are
 Deletion is restricted to those exact filenames, so the PR can never be talked
 into removing anything else.
 
+**Disguised assets**
+
+The rules are text-only and binary files are skipped, so a payload renamed to
+an asset extension is invisible to every other check — nobody reviews a font in
+a diff. So each binary asset's **header is checked against the signature its
+extension promises**:
+
+| Extension | Must start with |
+| --- | --- |
+| `.woff2` / `.woff` | `wOF2` / `wOFF` |
+| `.ttf` / `.otf` | `00 01 00 00`, `true`, `ttcf` / `OTTO` |
+| `.eot` | `4C 50` at offset 34 |
+| `.png` / `.jpg` / `.gif` / `.ico` / `.webp` | their own signatures |
+| `.pdf` / `.zip` | `%PDF-` / `PK..` |
+
+A mismatch is an ERROR (`asset-extension-content-mismatch`), and the finding
+names what the bytes actually are — JavaScript source, HTML, a PE or ELF
+executable, a shebang script, or plain text — with a hex+ASCII preview of the
+header. This does not validate the format; it only answers "is this what it
+claims to be".
+
+`.svg` is handled differently because it is text, not binary: SVG is XML that
+executes when rendered, so it is scanned for `<script>`, `javascript:` URLs and
+inline `on*=` handlers (`svg-embedded-script`, ERROR).
+
+Assets are capped at 40 per scan and 1MB each, with a separate budget from the
+text scan; the result panel reports how many were checked and how many were
+skipped by the cap.
+
 **Suppressing false positives**
 
 These rules match on pattern text, so a file that legitimately *contains* the
@@ -323,6 +352,24 @@ says so, rather than reporting "unprotected".
 
 When a scan flags a file, the expanded result has a **Remediation** panel. Tick
 the files you want cleaned and it opens a pull request.
+
+### Two write modes, and PR grouping
+
+The panel has a mode switch:
+
+| Mode | What happens |
+| --- | --- |
+| **open pull request** (default) | Commits to a new `repo-guard/cleanup-<timestamp>` branch and opens a PR. Nothing reaches the base branch until you merge. |
+| **commit to \<branch\>** | Commits straight onto the base branch. No review step. Takes a second, deliberate click to confirm, and the ref update is **never forced** — if the branch moved since the read, GitHub rejects it as a non-fast-forward rather than clobbering someone else's commit. |
+
+In PR mode you can also choose **one PR for all** selected files, or **one PR
+per file** — separate branches cut from the same base, so they merge or close
+independently. Per-file is capped at 10 PRs per run (25 files per run either
+way) to stop one click flooding the repo.
+
+`mode` is an explicit allowlist server-side: anything that is not exactly
+`"direct"` becomes `"pr"`. A malformed or unexpected value can never fall
+through to a direct write.
 
 What it does:
 
@@ -375,6 +422,32 @@ build. A mis-read makes the tool decline; it cannot make it corrupt a file.
 
 Capped at 25 files per PR. CRLF line endings and the presence or absence of a
 trailing newline are preserved.
+
+### Deleting a whole folder
+
+When the dropper plants a file in a folder, removing that one file is sometimes
+not enough — the whole folder may have arrived with the payload. The panel
+offers whole-folder removal, but only for folders that contain a **planted**
+file: a known dropper artifact, or an asset whose bytes contradict its
+extension.
+
+Four things gate it, all enforced server-side against the repo's own tree
+rather than trusting the browser:
+
+| Guard | Behaviour |
+| --- | --- |
+| root | `""`, `.`, `/`, `./`, `/.` and whitespace all refuse — the repository root can never be deleted |
+| traversal | any path containing `.` or `..` as a segment refuses, so a request cannot escape upward |
+| size | more than 100 files refuses; delete it by hand if you are sure |
+| justification | the folder must contain a dropper artifact by name, or an asset that fails its header check. **No finding inside it, no deletion** — whatever the client asks for |
+
+Selecting a folder arms the same two-step confirm a direct commit uses, and the
+PR body lists **every file** being removed together with the reason the folder
+qualified.
+
+Be clear about the trade: this deletes legitimate files in that folder too. If
+the malware dropped one file into a folder you own, clean the file instead.
+Whole-folder removal is for a folder that was never yours.
 
 ### What it explicitly does not do
 

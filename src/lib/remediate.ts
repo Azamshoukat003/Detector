@@ -189,6 +189,66 @@ export function planDeletion(path: string): StripResult {
   };
 }
 
+/**
+ * Deleting a whole directory is the most destructive thing this tool can do, so
+ * it is gated on three things the *server* checks, never the browser:
+ *   1. the directory is not the repo root,
+ *   2. it holds no more files than MAX_DIR_FILES,
+ *   3. something in it is actually flagged — a known dropper artifact, or an
+ *      asset whose bytes do not match its extension.
+ * Without (3) a directory cannot be deleted at all, whatever the client asks.
+ */
+export const MAX_DIR_FILES = 100;
+
+export interface DirPlan {
+  dir: string;
+  ok: boolean;
+  reason?: string;
+  /** Every file that would be removed. */
+  files: string[];
+  /** Why deletion was permitted, for the PR body and the UI. */
+  justification?: string;
+}
+
+/** Normalise a directory path: no leading/trailing slash, no "." or "..". */
+export function normaliseDir(raw: string): string | null {
+  const dir = raw.trim().replace(/^\/+/, "").replace(/\/+$/, "");
+  if (dir === "" || dir === "." || dir === "/") return null;
+  if (dir.split("/").some((seg) => seg === "." || seg === "..")) return null;
+  return dir;
+}
+
+/** Full PR body: folder removals first, then the per-file detail. */
+export function composePullRequestBody(
+  results: StripResult[],
+  plans: DirPlan[],
+  branch: string,
+): string {
+  const folders = directoryDeletionBody(plans);
+  const files = pullRequestBody(results, branch);
+  return folders.length > 0 ? folders.join("\n") + "\n" + files : files;
+}
+
+export function directoryDeletionBody(plans: DirPlan[]): string[] {
+  const applied = plans.filter((p) => p.ok);
+  if (applied.length === 0) return [];
+  const lines = [
+    "### Folders deleted",
+    "",
+    "Every file under these paths is removed. Each was permitted only because",
+    "the folder contains a flagged file — the reason is given per folder.",
+    "",
+  ];
+  for (const p of applied) {
+    lines.push(`**\`${p.dir}/\`** — ${p.files.length} file(s). ${p.justification}`);
+    lines.push("");
+    for (const f of p.files.slice(0, 40)) lines.push(`- \`${f}\``);
+    if (p.files.length > 40) lines.push(`- …and ${p.files.length - 40} more`);
+    lines.push("");
+  }
+  return lines;
+}
+
 /** Branch name for a cleanup PR. Timestamped so repeat runs never collide. */
 export function cleanupBranchName(now: Date): string {
   const stamp = now.toISOString().replace(/[:.]/g, "-").replace("T", "-").slice(0, 19);

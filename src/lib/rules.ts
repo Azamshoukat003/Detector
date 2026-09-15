@@ -127,6 +127,46 @@ export function droppedFilePresentFinding(path: string): Finding {
   };
 }
 
+export const ASSET_MISMATCH_RULE_ID = "asset-extension-content-mismatch";
+export const SVG_SCRIPT_RULE_ID = "svg-embedded-script";
+
+/**
+ * A binary asset whose bytes are not what its extension promises. Nobody reads
+ * a font in a diff, so a payload named `fa-solid-400.woff2` sitting beside real
+ * fonts is invisible to every text rule in this file.
+ */
+export function assetMismatchFinding(
+  path: string,
+  expected: string,
+  actual: string,
+  preview: string,
+): Finding {
+  return {
+    ruleId: ASSET_MISMATCH_RULE_ID,
+    severity: "ERROR",
+    message: `File extension claims ${expected}, but the bytes are ${actual}. A payload renamed to an asset extension is hidden from every content rule, because binary files are never parsed.`,
+    path,
+    line: 1,
+    column: 0,
+    excerpt: preview,
+    note: "Header bytes shown above. A real file of this type would start with its own signature.",
+  };
+}
+
+/** SVG is XML and runs in a browser context — script inside one is executable. */
+export function svgScriptFinding(path: string, line: number, excerpt: string): Finding {
+  return {
+    ruleId: SVG_SCRIPT_RULE_ID,
+    severity: "ERROR",
+    message:
+      "SVG contains a <script> element, a javascript: URL or an inline event handler. SVG is XML that executes when rendered, so this is active code shipped as an image.",
+    path,
+    line,
+    column: 0,
+    excerpt,
+  };
+}
+
 export interface Finding {
   ruleId: string;
   severity: Severity;
