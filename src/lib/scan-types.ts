@@ -24,6 +24,12 @@ export interface ScanStats {
   suppressedFindings: number;
   /** Known dropper artifacts found tracked in the tree. */
   droppersPresent: number;
+  /** Binary assets whose header was verified against their extension. */
+  assetsChecked: number;
+  /** Assets whose bytes did not match their extension (or SVGs with script). */
+  assetMismatches: number;
+  /** Assets left unchecked by the per-run asset cap. */
+  assetsSkipped: number;
   /** Files whose blob fetch failed. */
   fetchErrors: number;
   /** GitHub truncated the recursive tree — the scan did not see everything. */

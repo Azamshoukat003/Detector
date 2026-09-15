@@ -3,14 +3,29 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import {
   GitHubError,
+  getBlobBytes,
   getBlobText,
   getBranchProtection,
   getTree,
   type TreeEntry,
 } from "@/lib/github";
-import { droppedFilePresentFinding, runRules, type Finding } from "@/lib/rules";
+import {
+  assetMismatchFinding,
+  droppedFilePresentFinding,
+  runRules,
+  svgScriptFinding,
+  type Finding,
+} from "@/lib/rules";
+import {
+  assetExtension,
+  headerPreview,
+  verifyAsset,
+  SVG_SCRIPT_PATTERN,
+} from "@/lib/magic";
 import {
   IGNORE_FILE,
+  MAX_ASSET_BYTES,
+  MAX_ASSETS_PER_SCAN,
   MAX_FILE_BYTES,
   MAX_FILES_PER_SCAN,
   buildIgnoreMatcher,
@@ -139,6 +154,58 @@ export async function POST(request: Request) {
       }
     });
 
+    // Binary assets: the rules cannot see inside them, so instead check that
+    // each file's header matches the signature its extension promises. A
+    // payload renamed to .woff2 fails this immediately. SVG is text, so it gets
+    // a script check rather than a magic check.
+    let assetsChecked = 0;
+    let assetMismatches = 0;
+    const assetCandidates = blobs.filter(
+      (e) =>
+        !ignore.matches(e.path) &&
+        selectionReason(e.path) === null &&
+        (e.size ?? 0) <= MAX_ASSET_BYTES &&
+        (assetExtension(e.path) !== null || e.path.toLowerCase().endsWith(".svg")),
+    );
+    const assetsSelected = assetCandidates.slice(0, MAX_ASSETS_PER_SCAN);
+
+    await pool(assetsSelected, BLOB_CONCURRENCY, async (entry) => {
+      try {
+        const bytes = await getBlobBytes(token, owner, repo, entry.sha);
+        assetsChecked++;
+
+        if (entry.path.toLowerCase().endsWith(".svg")) {
+          const text = bytes.toString("utf8");
+          const lines = text.split(/\r?\n/);
+          for (let i = 0; i < lines.length; i++) {
+            if (SVG_SCRIPT_PATTERN.test(lines[i])) {
+              findings.push(
+                svgScriptFinding(entry.path, i + 1, lines[i].trim().slice(0, 160)),
+              );
+              assetMismatches++;
+              break; // one finding per file is enough to make the point
+            }
+          }
+          return;
+        }
+
+        const verdict = verifyAsset(entry.path, bytes);
+        if (verdict && !verdict.ok) {
+          assetMismatches++;
+          findings.push(
+            assetMismatchFinding(
+              entry.path,
+              verdict.label,
+              verdict.actual ?? "something else",
+              headerPreview(bytes),
+            ),
+          );
+        }
+      } catch {
+        /* an unreadable asset is not a finding */
+      }
+    });
+
     findings.sort(
       (a, b) =>
         SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] ||
@@ -163,6 +230,9 @@ export async function POST(request: Request) {
         ignoredByMarker,
         suppressedFindings,
         droppersPresent,
+        assetsChecked,
+        assetMismatches,
+        assetsSkipped: Math.max(0, assetCandidates.length - assetsSelected.length),
         treeTruncated: tree.truncated,
         durationMs: Date.now() - started,
       },

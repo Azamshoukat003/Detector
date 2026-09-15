@@ -70,6 +70,31 @@ export async function ghPost<T>(
   return (await res.json()) as T;
 }
 
+export async function ghPatch<T>(
+  token: string,
+  path: string,
+  body: unknown,
+): Promise<T> {
+  const res = await fetch(path.startsWith("http") ? path : API + path, {
+    method: "PATCH",
+    headers: { ...headers(token), "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const raw = await res.text().catch(() => "");
+    let detail = raw.slice(0, 300);
+    try {
+      const parsed = JSON.parse(raw) as { message?: string };
+      if (parsed.message) detail = parsed.message;
+    } catch {
+      /* keep the raw slice */
+    }
+    throw new GitHubError(res.status, `GitHub ${res.status}: ${detail}`);
+  }
+  return (await res.json()) as T;
+}
+
 export async function ghDelete(token: string, path: string): Promise<void> {
   const res = await fetch(path.startsWith("http") ? path : API + path, {
     method: "DELETE",
@@ -219,6 +244,19 @@ export async function getBlobText(
       : blob.content;
   // A NUL byte means binary; the regex rules are meaningless there.
   return text.includes(NUL) ? null : text;
+}
+
+/** Raw bytes of a blob — used for asset header checks, not for rule matching. */
+export async function getBlobBytes(
+  token: string,
+  owner: string,
+  repo: string,
+  sha: string,
+): Promise<Buffer> {
+  const blob = await gh<BlobResponse>(token, `/repos/${owner}/${repo}/git/blobs/${sha}`);
+  return blob.encoding === "base64"
+    ? Buffer.from(blob.content, "base64")
+    : Buffer.from(blob.content, "utf8");
 }
 
 export interface ProtectionStatus {
