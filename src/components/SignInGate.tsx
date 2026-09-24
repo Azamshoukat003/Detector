@@ -2,6 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import DemoConsole from "@/components/DemoConsole";
 
 const CAPABILITIES = [
   {
@@ -26,7 +27,7 @@ export default function SignInGate() {
       <section>
         <div className="gate-brand">
           <span className="block" aria-hidden />
-          <h1>repo-guard</h1>
+          <h1>Detector</h1>
         </div>
 
         <p className="lede">
@@ -75,65 +76,14 @@ export default function SignInGate() {
         </p>
       </section>
 
-      <section aria-hidden>
-        <div className="preview">
-          <div className="preview-bar">
-            <span className="lamp" />
-            <span className="lamp" />
-            <span className="lamp" />
-            <span className="title">acme/storefront — scan</span>
-          </div>
-          <div className="preview-body">
-            <div className="preview-line">
-              <span className="prompt">&gt;</span>
-              <span style={{ color: "var(--dim)" }}>
-                scanned 184 files on <b style={{ color: "var(--text)" }}>main</b>
-              </span>
-            </div>
-
-            <div className="finding finding--ERROR" style={{ marginTop: 10 }}>
-              <div className="finding-top">
-                <span className="sev sev--ERROR">ERROR</span>
-                <span className="rule-id">obfuscator-string-array-rotator</span>
-                <span className="loc">
-                  postcss.config.js<span className="ln">:1</span>
-                </span>
-              </div>
-              <div className="finding-body">
-                <p className="finding-msg">
-                  javascript-obfuscator string-array rotation idiom detected.
-                </p>
-                <div className="hunk">
-                  <div className="gutter">1</div>
-                  <pre className="code">
-                    {"(function(_0x3a1f,_0x4b2c){while(!![]){try{"}
-                  </pre>
-                </div>
-              </div>
-            </div>
-
-            <div className="finding finding--WARNING">
-              <div className="finding-top">
-                <span className="sev sev--WARNING">WARNING</span>
-                <span className="rule-id">forced-git-push</span>
-                <span className="loc">
-                  scripts/deploy.sh<span className="ln">:42</span>
-                </span>
-              </div>
-              <div className="finding-body">
-                <p className="finding-msg">
-                  Script contains a forced git push command.
-                </p>
-              </div>
-            </div>
-
-            <div className="preview-line" style={{ marginTop: 6 }}>
-              <span className="prompt">&gt;</span>
-              <span className="cursor" />
-            </div>
-          </div>
-        </div>
+      <section>
+        <DemoConsole />
+        <p className="gate-foot" style={{ marginTop: 12 }}>
+          A demo. The console runs in your browser over a fixed command list —
+          it reaches no server and touches no repository.
+        </p>
       </section>
+
     </main>
   );
 }

@@ -23,7 +23,7 @@ import {
   SVG_SCRIPT_PATTERN,
 } from "@/lib/magic";
 import {
-  IGNORE_FILE,
+  IGNORE_FILES,
   MAX_ASSET_BYTES,
   MAX_ASSETS_PER_SCAN,
   MAX_FILE_BYTES,
@@ -99,11 +99,16 @@ export async function POST(request: Request) {
     const blobs = tree.tree.filter((e): e is TreeEntry => e.type === "blob");
 
     // Load the repo's own suppression list, if it has one, before selecting.
-    const ignoreEntry = blobs.find((e) => e.path === IGNORE_FILE);
+    const ignoreEntries = blobs.filter((e) =>
+      (IGNORE_FILES as readonly string[]).includes(e.path),
+    );
+    const ignoreTexts: string[] = [];
+    for (const entry of ignoreEntries) {
+      const text = await getBlobText(token, owner, repo, entry.sha).catch(() => null);
+      if (text !== null) ignoreTexts.push(text);
+    }
     const ignore = buildIgnoreMatcher(
-      ignoreEntry
-        ? await getBlobText(token, owner, repo, ignoreEntry.sha).catch(() => null)
-        : null,
+      ignoreTexts.length > 0 ? ignoreTexts.join("\n") : null,
     );
 
     let skippedTooLarge = 0;

@@ -1,4 +1,4 @@
-# repo-guard
+# Detector
 
 A small, stateless security dashboard for GitHub repositories. It does three
 things:
@@ -38,7 +38,7 @@ Practical consequences:
   browser and used server-side for the duration of a request. It is never
   written to a database (there isn't one) and never sent anywhere except
   `api.github.com`.
-- **repo-guard writes to your repos in exactly one place**: the cleanup PR
+- **Detector writes to your repos in exactly one place**: the cleanup PR
   (below), and only when you click the button. It creates a new branch and a
   pull request; it never commits to your default branch, never force-pushes,
   and never deletes anything. Everything else in the app is read-only.
@@ -47,7 +47,7 @@ Practical consequences:
   client secret. Treat the deployment as a private tool: keep the URL to
   yourself, or put Vercel password protection / an allowlist in front of it.
 - Revoke at any time: **GitHub → Settings → Applications → Authorized OAuth
-  Apps → repo-guard → Revoke**.
+  Apps → Detector → Revoke**.
 
 ---
 
@@ -57,7 +57,7 @@ Practical consequences:
    App**. (For an org-owned app: *Organisation settings → Developer settings →
    OAuth Apps*.)
 2. Fill in:
-   - **Application name**: `repo-guard`
+   - **Application name**: `Detector`
    - **Homepage URL**: `http://localhost:3000` (local) or your Vercel URL
    - **Authorization callback URL**:
      `http://localhost:3000/api/auth/callback/github`
@@ -266,7 +266,7 @@ Both halves of that are detected:
 - **The `.gitignore` entry.** Matched as a whole line, allowing the usual `/`,
   `**/`, `!` and trailing-`/` spellings. This rule is **scoped to `.gitignore`
   files only** (`Rule.appliesTo`), so a README or a source file that merely
-  mentions the names does not trip it — including repo-guard's own source.
+  mentions the names does not trip it — including Detector's own source.
 
 Both also raise a push alert if a commit adds or modifies them.
 
@@ -311,10 +311,12 @@ These rules match on pattern text, so a file that legitimately *contains* the
 patterns — your own malware scanner, a test fixture, a security write-up — will
 be flagged. Two ways to silence it, both stateless:
 
-A `.repoguardignore` file at the repo root, gitignore-style:
+A `.detectorignore` file at the repo root, gitignore-style (the older
+`.repoguardignore` name is still read, so files already committed under it keep
+working — if a repo has both, both apply):
 
 ```
-# repo-guard's rules match the patterns this scanner looks for
+# Detector's rules match the patterns this scanner looks for
 scripts/malware-scan.js
 security/**/fixtures/*.js
 *.test.js
@@ -328,9 +330,12 @@ is **not** supported.
 Or an in-file marker:
 
 ```js
-// repo-guard:ignore-file        — skip this entire file
-// repo-guard:ignore-next-line   — skip findings on the following line
+// detector:ignore-file        — skip this entire file
+// detector:ignore-next-line   — skip findings on the following line
 ```
+
+The previous `repo-guard:` prefix is still honoured on both markers, so nothing
+already written into a repository stops working after the rename.
 
 Two deliberate properties, because a suppression mechanism in a security tool is
 itself an attack surface:
@@ -338,7 +343,7 @@ itself an attack surface:
 - **Suppression is counted, never hidden.** The scan report shows how many files
   and findings were suppressed and by which mechanism. A repo that suddenly
   suppresses 40 files is telling you something.
-- **`.repoguardignore` is a sensitive push path.** Changing it raises a webhook
+- **The ignore file is a sensitive push path.** Changing either name raises a webhook
   alert exactly like `.gitignore` or `postcss.config.js` does, because anyone who
   can edit the ignore list can hide a payload from the scanner.
 
@@ -359,7 +364,7 @@ The panel has a mode switch:
 
 | Mode | What happens |
 | --- | --- |
-| **open pull request** (default) | Commits to a new `repo-guard/cleanup-<timestamp>` branch and opens a PR. Nothing reaches the base branch until you merge. |
+| **open pull request** (default) | Commits to a new `detector/cleanup-<timestamp>` branch and opens a PR. Nothing reaches the base branch until you merge. |
 | **commit to \<branch\>** | Commits straight onto the base branch. No review step. Takes a second, deliberate click to confirm, and the ref update is **never forced** — if the branch moved since the read, GitHub rejects it as a non-fast-forward rather than clobbering someone else's commit. |
 
 In PR mode you can also choose **one PR for all** selected files, or **one PR
@@ -378,7 +383,7 @@ What it does:
   never taken from the browser.
 - Deletes **only** the lines a rule matched. Your real config survives — your
   actual Tailwind theme, ESLint rules, gitignore entries.
-- Commits to a new `repo-guard/cleanup-<timestamp>` branch and opens a PR
+- Commits to a new `detector/cleanup-<timestamp>` branch and opens a PR
   against the default branch. Nothing lands on your default branch without your
   review, and it works fine when branch protection blocks direct pushes.
 - Pre-selects config files (`postcss.config.js`, `tailwind.config.*`, ESLint
@@ -462,7 +467,7 @@ Whole-folder removal is for a folder that was never yours.
   access and the machine is still infected, the files get re-infected on the
   next push. The order that actually works is: revoke the collaborator's access
   → have them rotate credentials and clean the machine → enable branch
-  protection with force-pushes blocked → then clean the files. repo-guard shows
+  protection with force-pushes blocked → then clean the files. Detector shows
   you which repos still have force-push unblocked.
 
 ---
@@ -634,10 +639,10 @@ These are real gaps, not oversights:
   returning "clean" means "clean in what it looked at".
 - **No revert or rollback.** The cleanup PR is one-way; undoing it means
   closing the PR or reverting the merge on GitHub yourself.
-- **No commit-signature or authorship verification.** repo-guard tells you a
+- **No commit-signature or authorship verification.** Detector tells you a
   force-push happened; it does not verify who really made it. Requiring signed
   commits and enabling branch protection are the controls that actually *stop*
-  this attack — repo-guard just reports whether you have them on.
+  this attack — Detector just reports whether you have them on.
 - **No org/audit-log monitoring**, no dependency or lockfile-tampering checks,
   no secret scanning, no per-repo webhook management UI (webhooks are added by
   hand in GitHub settings).
@@ -649,6 +654,3 @@ These are real gaps, not oversights:
 
 If exactly one thing gets added in v2, it should be persistence — nearly every
 gap above (history, dedup, retry, trend) is downstream of having a database.
-#   D e t e c t o r 
- 
- 

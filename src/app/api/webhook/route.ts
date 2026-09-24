@@ -64,7 +64,7 @@ export async function POST(request: Request) {
   const secret = process.env.GITHUB_WEBHOOK_SECRET;
   if (!secret) {
     // Fail closed: an unverifiable endpoint is worse than a broken one.
-    console.error("[repo-guard] GITHUB_WEBHOOK_SECRET is not set; rejecting delivery.");
+    console.error("[detector] GITHUB_WEBHOOK_SECRET is not set; rejecting delivery.");
     return NextResponse.json({ error: "Webhook secret not configured." }, { status: 500 });
   }
 
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
 export function GET() {
   return NextResponse.json({
     ok: true,
-    endpoint: "repo-guard webhook",
+    endpoint: "Detector webhook",
     expects: "POST with X-Hub-Signature-256 and X-GitHub-Event: push",
   });
 }

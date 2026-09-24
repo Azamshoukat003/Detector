@@ -252,7 +252,7 @@ export function directoryDeletionBody(plans: DirPlan[]): string[] {
 /** Branch name for a cleanup PR. Timestamped so repeat runs never collide. */
 export function cleanupBranchName(now: Date): string {
   const stamp = now.toISOString().replace(/[:.]/g, "-").replace("T", "-").slice(0, 19);
-  return `repo-guard/cleanup-${stamp}`;
+  return `detector/cleanup-${stamp}`;
 }
 
 export function pullRequestBody(results: StripResult[], branch: string): string {
@@ -262,7 +262,7 @@ export function pullRequestBody(results: StripResult[], branch: string): string 
   const deleted = applied.filter((r) => r.action === "delete");
   const stripped = applied.filter((r) => r.action === "strip");
 
-  const lines = ["Automated cleanup opened by **repo-guard**.", "", `Base branch: \`${branch}\``, ""];
+  const lines = ["Automated cleanup opened by **Detector**.", "", `Base branch: \`${branch}\``, ""];
 
   if (deleted.length > 0) {
     lines.push(

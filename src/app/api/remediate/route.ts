@@ -160,7 +160,7 @@ async function buildCommit(
     token,
     `/repos/${owner}/${repo}/git/commits`,
     {
-      message: `repo-guard: ${headlineFor(applied)}\n\n${summaryFor(applied)}`,
+      message: `Detector: ${headlineFor(applied)}\n\n${summaryFor(applied)}`,
       tree: tree.sha,
       parents: [baseSha],
     },
@@ -438,7 +438,7 @@ export async function POST(request: Request) {
           sha: commitSha,
         });
         const pull = await ghPost<PullCreated>(token, `/repos/${owner}/${repo}/pulls`, {
-          title: `repo-guard: ${headlineFor(group)} — ${file.path}`,
+          title: `Detector: ${headlineFor(group)} — ${file.path}`,
           head,
           base: branch,
           body: pullRequestBody(group, branch),
@@ -469,7 +469,7 @@ export async function POST(request: Request) {
         sha: commitSha,
       });
       const pull = await ghPost<PullCreated>(token, `/repos/${owner}/${repo}/pulls`, {
-        title: `repo-guard: ${headline(applied, dirPlans)}`,
+        title: `Detector: ${headline(applied, dirPlans)}`,
         head,
         base: branch,
         body: composePullRequestBody(results, dirPlans, branch),

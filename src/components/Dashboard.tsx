@@ -185,12 +185,19 @@ export default function Dashboard({
 
   const scanned = tally.clean + tally.flagged + tally.error;
 
+  // Surface the count in the tab title, so a backgrounded sweep still tells
+  // you it found something without you switching to it.
+  useEffect(() => {
+    document.title =
+      tally.flagged > 0 ? `(${tally.flagged}) flagged · Detector` : "Detector";
+  }, [tally.flagged]);
+
   return (
     <div className="app">
       <header className="topbar">
         <div className="brand">
           <span className="block" aria-hidden />
-          repo-guard
+          Detector
         </div>
         <span className="divider" />
         <div className="crumbs">
@@ -291,6 +298,26 @@ export default function Dashboard({
       </div>
 
       <main className="wrap">
+        {/* Screen readers get sweep progress announced; sighted users see the
+            dots and the pills. */}
+        <div
+          aria-live="polite"
+          style={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            overflow: "hidden",
+            clip: "rect(0 0 0 0)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {sweeping
+            ? `Sweeping. ${scanned} of ${tally.total} scanned, ${tally.flagged} flagged.`
+            : scanned > 0
+              ? `${scanned} scanned, ${tally.flagged} flagged.`
+              : ""}
+        </div>
+
         {localOpen ? <LocalCheck onClose={() => setLocalOpen(false)} /> : null}
 
         {tally.flagged > 0 ? (

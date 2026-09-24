@@ -14,7 +14,7 @@ function headers(token: string): HeadersInit {
     Accept: "application/vnd.github+json",
     Authorization: `Bearer ${token}`,
     "X-GitHub-Api-Version": "2022-11-28",
-    "User-Agent": "repo-guard",
+    "User-Agent": "detector",
   };
 }
 

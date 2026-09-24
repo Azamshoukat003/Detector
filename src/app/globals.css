@@ -1059,7 +1059,7 @@ body {
   gap: 56px;
   max-width: 1140px;
   margin: 0 auto;
-  padding: 64px 32px;
+  padding: 16px 32px;
 }
 
 @media (max-width: 900px) {
@@ -1300,4 +1300,844 @@ body {
   font-family: var(--mono);
   font-size: 11px;
   color: var(--faint);
+}
+
+/* ============================================================
+   responsive
+
+   The desktop layout is a dense single-row toolbar over a ledger whose
+   rows put metadata and actions on one line. Neither survives a phone,
+   so below 900px the toolbar stacks and below 640px every row becomes a
+   block: name, then metadata, then a full-width action strip.
+
+   Touch gets its own pass: pointer:coarse raises every control to a
+   44px target regardless of viewport, because a 28px button is a miss
+   on a finger even on a tablet-width screen.
+   ============================================================ */
+
+@media (max-width: 900px) {
+  .wrap {
+    padding-inline: 16px;
+  }
+
+  .topbar {
+    padding-inline: 16px;
+    gap: 10px;
+  }
+
+  /* The repo/scanned counters are the first thing to go — they are a
+     convenience, and the sign-out control is not. */
+  .topbar .crumbs,
+  .topbar .divider {
+    display: none;
+  }
+
+  .toolbar {
+    padding-inline: 16px;
+    gap: 8px;
+  }
+
+  .toolbar .field {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  /* Segmented controls scroll sideways instead of forcing the row to wrap
+     into an unreadable stack. */
+  .toolbar .seg {
+    overflow-x: auto;
+    scrollbar-width: none;
+    max-width: 100%;
+  }
+
+  .toolbar .seg::-webkit-scrollbar {
+    display: none;
+  }
+
+  .summary .cell {
+    flex: 1 1 auto;
+    padding: 10px 13px;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 13.5px;
+  }
+
+  :root {
+    --topbar-h: 48px;
+  }
+
+  .wrap {
+    padding-inline: 12px;
+    padding-bottom: 64px;
+  }
+
+  .topbar,
+  .toolbar {
+    padding-inline: 12px;
+  }
+
+  .who span {
+    max-width: 12ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Narrower spine so the content column keeps its width. */
+  .node {
+    grid-template-columns: 16px 1fr;
+    column-gap: 10px;
+  }
+
+  .row {
+    margin-left: -8px;
+    padding: 11px 8px 12px;
+  }
+
+  /* Name on its own line; actions become a full-width strip underneath,
+     which is also what makes them big enough to tap. */
+  .row-main {
+    align-items: flex-start;
+    gap: 7px;
+  }
+
+  .repo {
+    flex: 1 1 100%;
+    font-size: 14px;
+    word-break: break-word;
+  }
+
+  .row-actions {
+    margin-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .row-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .row-actions .pill {
+    order: -1;
+  }
+
+  .row-meta {
+    gap: 4px 10px;
+    font-size: 11px;
+  }
+
+  /* The "|" separators read as noise once the metadata wraps. */
+  .row-meta .sep {
+    display: none;
+  }
+
+  .summary {
+    flex-direction: column;
+  }
+
+  .summary .cell {
+    width: 100%;
+    border-right: 0;
+    border-bottom: 1px solid var(--edge-soft);
+  }
+
+  .summary .cell:last-child {
+    border-bottom: 0;
+  }
+
+  .sect,
+  .detail-section {
+    padding-inline: 11px;
+  }
+
+  /* Remediation and branch rows: path on its own line, controls below. */
+  .fixrow {
+    flex-wrap: wrap;
+    row-gap: 7px;
+  }
+
+  .fixrow .p {
+    flex: 1 1 100%;
+    white-space: normal;
+    word-break: break-all;
+  }
+
+  .fixrow .why {
+    margin-left: 0;
+    text-align: left;
+    flex: 1 1 100%;
+  }
+
+  .fixrow .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .fixbar {
+    gap: 8px;
+  }
+
+  .fixbar .btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .fixbar .seg {
+    flex: 1 1 100%;
+  }
+
+  .fixbar .seg button {
+    flex: 1 1 0;
+  }
+
+  .fixbar .why {
+    flex: 1 1 100%;
+  }
+
+  /* A finding's location must not push the card wide. */
+  .finding-top {
+    row-gap: 6px;
+  }
+
+  .loc {
+    margin-left: 0;
+    flex: 1 1 100%;
+    white-space: normal;
+    word-break: break-all;
+  }
+
+  .finding-msg,
+  .finding-note {
+    max-width: none;
+  }
+
+  .checks {
+    gap: 6px;
+  }
+
+  .check {
+    flex: 1 1 100%;
+  }
+
+  .gate {
+    padding: 28px 16px;
+  }
+
+  .gate h1 {
+    font-size: 22px;
+  }
+
+  .gate .lede {
+    font-size: 14px;
+  }
+}
+
+/* Touch targets. Applies at any width — a stylus or finger needs the same
+   44px whether the screen is a phone or a drawing tablet. */
+@media (pointer: coarse) {
+  .btn {
+    min-height: 40px;
+    padding-block: 10px;
+  }
+
+  .seg button {
+    min-height: 40px;
+  }
+
+  .field {
+    height: 40px;
+  }
+
+  .fixrow {
+    padding-block: 11px;
+  }
+
+  .fixrow input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Code and preformatted blocks must scroll themselves, never the page. */
+.hunk .code,
+pre.excerpt {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+/* ============================================================
+   demo console (sign-in page)
+
+   A carousel of the three injection shapes, over a console the visitor
+   can type into. The console is browser-only by design, so nothing here
+   needs a network state or an error state.
+   ============================================================ */
+
+.console {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--edge);
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.console-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 13px;
+  border-bottom: 1px solid var(--edge);
+  background: var(--raise);
+  flex: none;
+}
+
+.console-bar .lamp {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--edge);
+  flex: none;
+  transition:
+    background-color 260ms ease,
+    box-shadow 260ms ease;
+}
+
+/* The lamps double as the carousel's position indicator — first lamp lit on
+   the first slide, and so on. */
+.console-bar .lamp--on {
+  background: var(--ok);
+  box-shadow: 0 0 9px color-mix(in oklab, var(--ok) 65%, transparent);
+}
+
+.console-title {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-left: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.console-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--edge-soft);
+  flex: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.console-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.console-tabs button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1;
+  color: var(--dimmer);
+  background: transparent;
+  border: 0;
+  padding: 10px 10px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 140ms ease;
+}
+
+/* The underline is a pseudo-element pinned to the middle and opened out to
+   both edges, rather than a border that can only switch colour instantly.
+   left/right animate symmetrically, so it grows from the centre of the label
+   to exactly the width of its content box. */
+.console-tabs button::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  right: 50%;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ok);
+  opacity: 0;
+  transition:
+    left 260ms linear,
+    right 260ms linear,
+    opacity 120ms linear;
+}
+
+.console-tabs button[aria-selected="true"]::after {
+  /* Matches the horizontal padding, so the rule spans the label exactly. */
+  left: 10px;
+  right: 10px;
+  opacity: 1;
+}
+
+.console-tabs button:hover {
+  color: var(--text);
+}
+
+.console-tabs button[aria-selected="true"] {
+  color: var(--text);
+}
+
+.console-tabs .idx {
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.console-tabs .rotating {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--faint);
+  padding-right: 6px;
+  animation: pulse-soft 2.2s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .console-tabs .rotating {
+    animation: none;
+  }
+}
+
+.console-slide {
+  padding: 13px;
+  /* The stage owns the height; each slide simply fills it. */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  /* Safety net only — at the default font size no slide reaches this. */
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.console-caption {
+  margin: 0 0 11px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--dim);
+}
+
+.console-slide .finding {
+  margin-bottom: 8px;
+}
+
+.console-slide .finding-msg {
+  font-size: 12.5px;
+}
+
+.console-log {
+  border-top: 1px solid var(--edge-soft);
+  padding: 10px 13px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.65;
+  max-height: 150px;
+  overflow-y: auto;
+  background: color-mix(in oklab, var(--ink) 55%, var(--panel));
+}
+
+.cline {
+  display: flex;
+  gap: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cline--out {
+  color: var(--dim);
+}
+
+.cline--in {
+  color: var(--text);
+}
+
+.cline--err {
+  color: var(--err);
+}
+
+.console-input {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 13px;
+  border-top: 1px solid var(--edge-soft);
+  background: color-mix(in oklab, var(--ink) 55%, var(--panel));
+}
+
+.console-input .prompt,
+.cline .prompt {
+  color: var(--ok);
+  font-family: var(--mono);
+  flex: none;
+}
+
+.console-input input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  outline: none;
+  padding: 0;
+}
+
+.console-input input::placeholder {
+  color: var(--faint);
+}
+
+/* Block cursor, same idiom as the one beside the wordmark. Shown while the
+   field is idle; once focused the native caret takes over and this hides so
+   there are never two cursors. */
+.console-input .caret {
+  width: 8px;
+  height: 15px;
+  border-radius: 1px;
+  background: var(--ok);
+  flex: none;
+  animation: blink 1.1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .console-input .caret {
+    animation: none;
+  }
+
+  .console-tabs button::after {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .console-slide {
+    padding: 11px;
+  }
+
+  .console-log {
+    max-height: 120px;
+  }
+}
+
+/* ============================================================
+   carousel transitions
+
+   The stage stacks both slides during a swap: the outgoing one is taken
+   out of flow and animated out, the incoming one animates in underneath
+   it. Four modes, selected by the fx-* class from DemoConsole.
+
+   Every mode collapses to an instant swap under prefers-reduced-motion —
+   a glitch effect is exactly what that setting exists to suppress.
+   ============================================================ */
+
+.console-stage {
+  position: relative;
+  /* FIXED, not min-height: the panel must not resize when the tab changes.
+     Sized to the .gitignore slide, which is the reference layout. */
+  height: 268px;
+}
+
+.console-stage .console-slide.is-leaving {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ---- scan: CRT repaint (default) ---------------------------- */
+
+.fx-scan .console-slide.is-entering {
+  animation: scan-in 380ms cubic-bezier(0.22, 0.75, 0.3, 1) both;
+}
+
+.fx-scan .console-slide.is-leaving {
+  animation: scan-out 200ms ease-in both;
+}
+
+/* The findings print in sequence rather than arriving as a block. */
+.fx-scan .console-slide.is-entering .finding {
+  animation: print-in 260ms ease-out both;
+}
+
+.fx-scan .console-slide.is-entering .finding:nth-of-type(1) {
+  animation-delay: 110ms;
+}
+
+.fx-scan .console-slide.is-entering .finding:nth-of-type(2) {
+  animation-delay: 190ms;
+}
+
+/* The scanline itself. */
+.fx-scan .console-slide.is-entering::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--ok) 70%, transparent),
+    transparent
+  );
+  box-shadow: 0 0 14px color-mix(in oklab, var(--ok) 55%, transparent);
+  animation: scan-sweep 380ms cubic-bezier(0.22, 0.75, 0.3, 1) both;
+  pointer-events: none;
+}
+
+.fx-scan .console-slide {
+  position: relative;
+}
+
+@keyframes scan-in {
+  from {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0.4;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+@keyframes scan-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes print-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes scan-sweep {
+  from {
+    top: 0;
+    opacity: 1;
+  }
+  to {
+    /* Stops exactly on the bottom edge. A plain 100% puts the 2px bar past
+       the box, which adds scrollable overflow now that the slide can scroll. */
+    top: calc(100% - 2px);
+    opacity: 0;
+  }
+}
+
+/* ---- dissolve: true cross-fade ------------------------------ */
+
+.fx-dissolve .console-slide.is-entering {
+  animation: fade-in 320ms ease both;
+}
+
+.fx-dissolve .console-slide.is-leaving {
+  animation: fade-out 320ms ease both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ---- black: fade down to ground, then back up --------------- */
+
+.fx-black .console-slide.is-leaving {
+  animation: dip-out 200ms ease-in both;
+}
+
+.fx-black .console-slide.is-entering {
+  animation: dip-in 260ms ease-out 200ms both;
+}
+
+@keyframes dip-out {
+  from {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  to {
+    opacity: 0;
+    filter: brightness(0.2);
+  }
+}
+
+@keyframes dip-in {
+  from {
+    opacity: 0;
+    filter: brightness(0.2);
+  }
+  to {
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+/* ---- glitch: channel split and slice jitter ----------------- */
+
+.fx-glitch .console-slide.is-entering {
+  animation: glitch-in 420ms steps(1, end) both;
+}
+
+.fx-glitch .console-slide.is-leaving {
+  animation: glitch-out 180ms steps(1, end) both;
+}
+
+@keyframes glitch-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-6px);
+    clip-path: inset(18% 0 52% 0);
+  }
+  20% {
+    opacity: 1;
+    transform: translateX(5px);
+    clip-path: inset(62% 0 12% 0);
+    filter: drop-shadow(2px 0 var(--err)) drop-shadow(-2px 0 var(--ok));
+  }
+  40% {
+    transform: translateX(-3px);
+    clip-path: inset(6% 0 70% 0);
+  }
+  60% {
+    transform: translateX(2px);
+    clip-path: inset(40% 0 20% 0);
+    filter: drop-shadow(-1px 0 var(--warn));
+  }
+  80% {
+    transform: none;
+    clip-path: inset(0 0 0 0);
+    filter: none;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 0 0 0);
+    filter: none;
+  }
+}
+
+@keyframes glitch-out {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateX(4px) skewX(-1.5deg);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---- motion preference ------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .console-stage .console-slide.is-entering,
+  .console-stage .console-slide.is-leaving,
+  .console-stage .console-slide.is-entering .finding,
+  .console-stage .console-slide.is-entering::after {
+    animation: none !important;
+  }
+
+  .console-stage .console-slide.is-leaving {
+    display: none;
+  }
+}
+
+/* Secondary rules, one line, pushed to the bottom so the detailed finding
+   always sits in the same place across slides. */
+.console-also {
+  display: flex;
+  align-items: center;
+  gap: 6px 12px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 10px;
+  min-height: 18px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.console-also .label {
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-size: 9.5px;
+}
+
+.console-also .pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--dimmer);
+}
+
+.dotsev {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.dotsev--ERROR {
+  background: var(--err);
+}
+
+.dotsev--WARNING {
+  background: var(--warn);
+}
+
+@media (max-width: 900px) {
+  /* On a phone the panel sits below the copy, so there is no side-by-side
+     jump to prevent — let it size to its content instead of scrolling. */
+  .console-stage {
+    height: auto;
+    min-height: 0;
+  }
+
+  .console-slide {
+    height: auto;
+    overflow-y: visible;
+  }
 }

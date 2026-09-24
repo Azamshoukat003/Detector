@@ -191,15 +191,19 @@ const EXCERPT_MAX = 160;
  * patterns on purpose — a malware scanner of your own, a test fixture, a
  * security write-up.
  *
- *   // repo-guard:ignore-file        skip the whole file
- *   // repo-guard:ignore-next-line   skip findings on the following line
+ *   // detector:ignore-file        skip the whole file
+ *   // detector:ignore-next-line   skip findings on the following line
+ *
+ * The older `repo-guard:` spelling is still honoured, because markers already
+ * written into repositories must keep working after the rename. Both forms are
+ * equivalent; new files should use `detector:`.
  *
  * Note the obvious limitation: anyone who can write to the repo can also write
  * these markers. That is why the scan report counts what was suppressed rather
- * than hiding it, and why a change to `.repoguardignore` raises a push alert.
+ * than hiding it, and why a change to the ignore file raises a push alert.
  */
-const IGNORE_FILE_MARKER = /repo-guard:\s*ignore-file/;
-const IGNORE_NEXT_LINE_MARKER = /repo-guard:\s*ignore-next-line/;
+const IGNORE_FILE_MARKER = /(?:detector|repo-guard):\s*ignore-file/;
+const IGNORE_NEXT_LINE_MARKER = /(?:detector|repo-guard):\s*ignore-next-line/;
 
 export interface RuleRunResult {
   findings: Finding[];

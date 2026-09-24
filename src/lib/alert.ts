@@ -21,7 +21,7 @@ function alertKind(): AlertKind {
 export async function sendAlert(text: string): Promise<AlertResult> {
   const url = process.env.ALERT_WEBHOOK_URL;
   if (!url) {
-    console.warn("[repo-guard] ALERT_WEBHOOK_URL not set; alert dropped:", text);
+    console.warn("[detector] ALERT_WEBHOOK_URL not set; alert dropped:", text);
     return { sent: false, reason: "ALERT_WEBHOOK_URL is not configured" };
   }
 
@@ -37,13 +37,13 @@ export async function sendAlert(text: string): Promise<AlertResult> {
     });
     if (!res.ok) {
       const detail = (await res.text().catch(() => "")).slice(0, 200);
-      console.error(`[repo-guard] alert webhook returned ${res.status}: ${detail}`);
+      console.error(`[detector] alert webhook returned ${res.status}: ${detail}`);
       return { sent: false, reason: `alert webhook returned ${res.status}` };
     }
     return { sent: true };
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
-    console.error("[repo-guard] alert webhook request failed:", reason);
+    console.error("[detector] alert webhook request failed:", reason);
     return { sent: false, reason };
   }
 }

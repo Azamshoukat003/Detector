@@ -1,7 +1,8 @@
-# repo-guard's own detection rules, demo content and docs contain the payload
+# Detector's own detection rules, demo content and docs contain the payload
 # signatures they look for. Without this, the tool flags itself — and a cleanup
 # PR will happily delete its own rules.
 src/lib/rules.ts
 src/lib/scan-policy.ts
+src/lib/magic.ts
 src/components/SignInGate.tsx
 README.md

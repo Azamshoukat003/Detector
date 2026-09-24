@@ -98,7 +98,7 @@ export default function LocalCheck({ onClose }: { onClose: () => void }) {
         </div>
 
         <p className="hint" style={{ marginTop: 0 }}>
-          Walks a folder on the machine running repo-guard and reports two things:
+          Walks a folder on the machine running Detector and reports two things:
           files named{" "}
           <b>{(cap?.watching ?? []).join(", ") || "the known dropper artifacts"}</b>,
           and any <b>.gitignore</b> line that names one of them. It reads nothing

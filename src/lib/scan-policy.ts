@@ -123,12 +123,19 @@ export const SENSITIVE_PUSH_PATHS = new Set([
   "eslint.config.js",
   ".eslintrc.js",
   ".npmrc",
+  ".detectorignore",
   ".repoguardignore",
   ...KNOWN_DROPPED_FILES,
 ]);
 
-/** Optional repo-root file listing gitignore-style patterns to skip. */
-export const IGNORE_FILE = ".repoguardignore";
+/**
+ * Optional repo-root file listing gitignore-style patterns to skip.
+ * `.detectorignore` is the current name; `.repoguardignore` is still read so
+ * that files already committed under the old name keep working. If a repo has
+ * both, both are applied.
+ */
+export const IGNORE_FILE = ".detectorignore";
+export const IGNORE_FILES = [".detectorignore", ".repoguardignore"] as const;
 
 /**
  * Translate one gitignore-style pattern to an anchored RegExp.
