@@ -97,6 +97,36 @@ export const RULES: Rule[] = [
     message: "Downloads and pipes content directly into a shell/interpreter.",
   },
   {
+    id: "vscode-task-runs-on-folder-open",
+    severity: "ERROR",
+    appliesTo: (path) => /(^|\/)\.vscode\/tasks\.json$/i.test(path),
+    pattern: /"runOn"\s*:\s*"folderOpen"/g,
+    message:
+      "A VS Code task is set to run the moment this folder is opened — no build, no install, no click. Read the task's command before opening this repository in an editor again.",
+  },
+  {
+    id: "vscode-automatic-tasks-allowed",
+    severity: "ERROR",
+    appliesTo: (path) => /(^|\/)\.vscode\/settings\.json$/i.test(path),
+    pattern: /"task\.allowAutomaticTasks"\s*:\s*true/g,
+    message:
+      "This repository pre-approves automatic task execution. VS Code would normally prompt before running a folderOpen task; this setting removes that prompt, which is the only thing standing between opening the folder and running its command.",
+  },
+  {
+    /**
+     * The execution primitive behind the whole dropper campaign: interpreters
+     * do not care about file extensions, so `node something.woff2` runs that
+     * file as JavaScript. Unscoped on purpose — this shows up in editor tasks,
+     * npm scripts, CI workflows and shell scripts alike.
+     */
+    id: "interpreter-runs-data-file",
+    severity: "ERROR",
+    pattern:
+      /\b(?:node|deno|bun|python3?|ruby|perl|osascript)\s+[^\s"'|&;)]*\.(?:woff2?|ttf|otf|eot|png|jpe?g|gif|ico|webp|bmp|pdf|zip|bin|dat|mp[34]|wasm)\b/gi,
+    message:
+      "An interpreter is invoked on a data or asset file. Interpreters ignore file extensions, so this executes the file as code — a payload renamed to look like a font or an image is run exactly this way.",
+  },
+  {
     id: "gitignore-hides-dropped-payload",
     severity: "ERROR",
     appliesTo: (path) => basename(path) === ".gitignore",

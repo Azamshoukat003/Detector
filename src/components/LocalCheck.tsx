@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 interface LocalHit {
-  kind: "dropped-file" | "gitignore-entry";
+  kind: "dropped-file" | "gitignore-entry" | "autorun-task";
   path: string;
   size?: number;
   modified?: string;
@@ -17,6 +17,7 @@ interface LocalScanResult {
     dirsVisited: number;
     filesVisited: number;
     gitignoresRead: number;
+    autorunConfigsRead?: number;
     durationMs: number;
     truncated: boolean;
     truncatedBy?: string;
@@ -83,6 +84,7 @@ export default function LocalCheck({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const autorun = result?.hits.filter((h) => h.kind === "autorun-task") ?? [];
   const droppedFiles = result?.hits.filter((h) => h.kind === "dropped-file") ?? [];
   const gitignoreHits = result?.hits.filter((h) => h.kind === "gitignore-entry") ?? [];
 
@@ -99,6 +101,7 @@ export default function LocalCheck({ onClose }: { onClose: () => void }) {
 
         <p className="hint" style={{ marginTop: 0 }}>
           Walks a folder on the machine running Detector and reports two things:
+          .vscode / .devcontainer config that runs a command on folder open,
           files named{" "}
           <b>{(cap?.watching ?? []).join(", ") || "the known dropper artifacts"}</b>,
           and any <b>.gitignore</b> line that names one of them. It reads nothing
@@ -169,6 +172,44 @@ export default function LocalCheck({ onClose }: { onClose: () => void }) {
                 partial result. Point it at a narrower folder for full coverage.
               </p>
             ) : null}
+          </div>
+
+          <div className="sect">
+            <div className="sect-head">
+              <span className="sect-title">
+                Editor config that executes on folder open
+                {autorun.length ? ` · ${autorun.length}` : ""}
+              </span>
+              <span className="sect-rule" />
+            </div>
+            {autorun.length === 0 ? (
+              <p className="hint" style={{ marginTop: 0 }}>
+                No .vscode or .devcontainer config under this folder runs a
+                command automatically.
+              </p>
+            ) : (
+              autorun.map((h) => (
+                <div className="finding finding--ERROR" key={h.path}>
+                  <div className="finding-top">
+                    <span className="sev sev--ERROR">ERROR</span>
+                    <span className="rule-id">vscode-autorun-task</span>
+                    <span className="loc">{h.path}</span>
+                  </div>
+                  <div className="finding-body">
+                    <p className="finding-msg">
+                      This runs the moment the folder is opened in an editor.
+                      Read the command before opening this project again.
+                    </p>
+                    {(h.lines ?? []).map((l) => (
+                      <div className="hunk" key={l.line}>
+                        <div className="gutter">{l.line}</div>
+                        <pre className="code">{l.text}</pre>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           <div className="sect">

@@ -220,12 +220,49 @@ export function isConfigFile(path: string): boolean {
   return ALWAYS_SCAN_FILENAMES.has(basename(path));
 }
 
-export type SelectionReason = "extension" | "always-scan";
+/**
+ * Editor and dev-container configuration that can execute a command without
+ * anyone asking for it.
+ *
+ * `.vscode/tasks.json` can declare `"runOn": "folderOpen"`, which runs a shell
+ * command the instant the folder is opened — no build, no install, no click.
+ * `.vscode/settings.json` can set `task.allowAutomaticTasks: true`, which
+ * removes the prompt VS Code would otherwise show. `.devcontainer` lifecycle
+ * hooks are the same idea, and `initializeCommand` runs on the *host*.
+ *
+ * These are JSON, so nothing in SCAN_EXTENSIONS would have picked them up.
+ * They are matched by directory rather than by basename, because `tasks.json`
+ * on its own is far too generic a name to watch globally.
+ */
+export const AUTORUN_CONFIG_DIRS = [".vscode/", ".devcontainer/"];
+
+/** GitHub Actions workflows execute on push, so they belong in the same class. */
+const WORKFLOW_PATH = /(^|\/)\.github\/workflows\/[^/]+\.ya?ml$/i;
+
+export function isAutorunConfig(path: string): boolean {
+  if (WORKFLOW_PATH.test(path)) return true;
+  if (!path.toLowerCase().endsWith(".json")) return false;
+  return AUTORUN_CONFIG_DIRS.some(
+    (d) => path.startsWith(d) || path.includes("/" + d),
+  );
+}
+
+/**
+ * True when a push touching this path deserves an alert. Basename matches
+ * cover the config files; `isAutorunConfig` covers the editor directories,
+ * where the filename alone is not distinctive enough.
+ */
+export function isSensitivePushPath(path: string): boolean {
+  return SENSITIVE_PUSH_PATHS.has(basename(path)) || isAutorunConfig(path);
+}
+
+export type SelectionReason = "extension" | "always-scan" | "autorun-config";
 
 /** Decide whether a repo-relative path is in scope for scanning. */
 export function selectionReason(path: string): SelectionReason | null {
   if (isSkippedDir(path)) return null;
   if (ALWAYS_SCAN_FILENAMES.has(basename(path))) return "always-scan";
+  if (isAutorunConfig(path)) return "autorun-config";
   if (hasScannableExtension(path)) return "extension";
   return null;
 }

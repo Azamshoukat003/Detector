@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { sendAlert } from "@/lib/alert";
-import { SENSITIVE_PUSH_PATHS } from "@/lib/scan-policy";
+import { isSensitivePushPath } from "@/lib/scan-policy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -53,8 +53,7 @@ function sensitivePathsTouched(payload: PushPayload): string[] {
   const hits = new Set<string>();
   for (const commit of payload.commits ?? []) {
     for (const path of [...(commit.added ?? []), ...(commit.modified ?? [])]) {
-      const name = path.slice(path.lastIndexOf("/") + 1);
-      if (SENSITIVE_PUSH_PATHS.has(name)) hits.add(path);
+      if (isSensitivePushPath(path)) hits.add(path);
     }
   }
   return [...hits].sort();

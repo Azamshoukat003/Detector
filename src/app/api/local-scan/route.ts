@@ -56,8 +56,29 @@ function localScanEnabled(): boolean {
 const DISABLED_MESSAGE =
   "Local filesystem scanning is disabled here. It runs only on a local dev server, or when ENABLE_LOCAL_SCAN=1 is set — never on Vercel, because it would expose the server's filesystem to anyone who can sign in.";
 
+/**
+ * Editor config that executes on folder open. Checked on disk as well as in
+ * the repo, because this is the one finding you want *before* you open the
+ * folder in an editor — by the time it is in your working tree, opening it is
+ * all it takes.
+ */
+const AUTORUN_MARKERS: { re: RegExp; note: string }[] = [
+  {
+    re: /"runOn"\s*:\s*"folderOpen"/,
+    note: "task runs automatically when this folder is opened",
+  },
+  {
+    re: /"task\.allowAutomaticTasks"\s*:\s*true/,
+    note: "automatic tasks are pre-approved, so VS Code will not prompt",
+  },
+  {
+    re: /\b(?:node|deno|bun|python3?|ruby|perl|osascript)\s+[^\s"'|&;)]*\.(?:woff2?|ttf|otf|eot|png|jpe?g|gif|ico|webp|bmp|pdf|zip|bin|dat|wasm)\b/i,
+    note: "an interpreter is invoked on a data/asset file — that executes it as code",
+  },
+];
+
 export interface LocalHit {
-  kind: "dropped-file" | "gitignore-entry";
+  kind: "dropped-file" | "gitignore-entry" | "autorun-task";
   path: string;
   /** Bytes, for a dropped file. */
   size?: number;
@@ -74,6 +95,7 @@ export interface LocalScanResult {
     dirsVisited: number;
     filesVisited: number;
     gitignoresRead: number;
+    autorunConfigsRead: number;
     durationMs: number;
     /** True when a limit stopped the walk before it finished. */
     truncated: boolean;
@@ -136,6 +158,7 @@ export async function POST(request: Request) {
   let dirsVisited = 0;
   let filesVisited = 0;
   let gitignoresRead = 0;
+  let autorunConfigsRead = 0;
   let truncatedBy: "depth" | "entries" | "time" | undefined;
 
   const overBudget = () => {
@@ -192,6 +215,37 @@ export async function POST(request: Request) {
         continue;
       }
 
+      // Editor / dev-container config that can execute on folder open.
+      const parent = dir.split(/[\\/]/).pop() ?? "";
+      if (
+        (parent === ".vscode" || parent === ".devcontainer") &&
+        entry.name.toLowerCase().endsWith(".json")
+      ) {
+        try {
+          const info = await stat(full);
+          if (info.size <= MAX_GITIGNORE_BYTES) {
+            const text = await readFile(full, "utf8");
+            autorunConfigsRead++;
+            const split = text.split(/\r?\n/);
+            const lines: { line: number; text: string }[] = [];
+            for (let i = 0; i < split.length; i++) {
+              for (const m of AUTORUN_MARKERS) {
+                if (m.re.test(split[i])) {
+                  lines.push({ line: i + 1, text: split[i].trim().slice(0, 200) });
+                  break;
+                }
+              }
+            }
+            if (lines.length > 0) {
+              hits.push({ kind: "autorun-task", path: full, lines });
+            }
+          }
+        } catch {
+          /* unreadable config — skip */
+        }
+        continue;
+      }
+
       if (entry.name === ".gitignore") {
         try {
           const info = await stat(full);
@@ -226,6 +280,7 @@ export async function POST(request: Request) {
       dirsVisited,
       filesVisited,
       gitignoresRead,
+      autorunConfigsRead,
       durationMs: Date.now() - started,
       truncated: truncatedBy !== undefined,
       ...(truncatedBy ? { truncatedBy } : {}),

