@@ -41,7 +41,6 @@ interface Slide {
 }
 
 const OBFUSCATED =
-  'global.i="A10-*870";const _0x499797=_0x1574;(function(_0x50cf58,_0x4b5935){while(!![]){try{';
 
 export const SLIDES: Slide[] = [
   {
